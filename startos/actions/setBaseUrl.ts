@@ -1,7 +1,7 @@
 import { storeJson } from '../fileModels/store.json'
 import { i18n } from '../i18n'
 import { sdk } from '../sdk'
-import { getNonLocalUrls } from '../utils'
+import { getNonLocalUrls } from '../addresses'
 
 const { InputSpec, Value } = sdk
 

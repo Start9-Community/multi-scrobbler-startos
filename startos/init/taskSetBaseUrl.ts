@@ -2,7 +2,7 @@ import { setBaseUrl } from '../actions/setBaseUrl'
 import { storeJson } from '../fileModels/store.json'
 import { i18n } from '../i18n'
 import { sdk } from '../sdk'
-import { getNonLocalUrls } from '../utils'
+import { getNonLocalUrls } from '../addresses'
 
 export const taskSetBaseUrl = sdk.setupOnInit(async (effects) => {
   const available = await getNonLocalUrls(effects)
