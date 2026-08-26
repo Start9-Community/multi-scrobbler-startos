@@ -14,9 +14,10 @@ Sources and clients are added through an action rather than by editing a file ov
 the address that music services send you back to after authorization is one you pick from a
 list.
 
-Multi-Scrobbler's dashboard has no password of its own, so treat it like any other
-unauthenticated service on your server: enable only the addresses you are comfortable
-exposing it on.
+Multi-Scrobbler has no password of its own, and there is no setting to add one. Anyone who
+can open the address can do everything you can — read its logs, pause your scrobbling, and
+start an authorization flow. Your account credentials are not on show, but the controls are,
+so enable only the addresses you would hand those controls to.
 
 ## Getting set up
 

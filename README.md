@@ -102,8 +102,18 @@ One interface, serving the dashboard and the REST API from the same port.
 | ------------- | ---- | ---- | ---- | -------- | ---------------------------------------------------- |
 | Web Interface | `ui` | ui   | 9078 | HTTP     | dashboard, OAuth authorization links, and the REST API |
 
-The dashboard has no login of its own — upstream ships none — so whichever addresses are
-enabled for this interface are the access control.
+**There is no authentication, and none can be turned on.** Upstream ships no login layer at
+all: its `auth` module handles only outbound OAuth to Spotify, Last.fm, Deezer and YouTube
+Music, and the session middleware exists to carry those callbacks rather than to identify a
+user. So whichever addresses are enabled for this interface are the entire access control.
+
+Treat that as wider than a read-only page, because the REST API is a control surface. Without
+credentials a caller can read the full application log (`/api/logs`, and a live stream of it),
+stop and restart scrobbling for any source or client (`/api/client/listen`, `/api/source/init`),
+clear caches, manipulate the dead-scrobble queue, and start an OAuth authorization flow
+(`/api/source/auth`). Source and client secrets are not exposed — `/api/status` and
+`/api/components` report state without credentials in it — but everything above is reachable by
+anyone who can open the address.
 
 ## Installation and First-Run Flow
 
