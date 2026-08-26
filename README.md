@@ -4,16 +4,14 @@
 
 # Multi-Scrobbler on StartOS
 
-> **Upstream docs:** <https://docs.multi-scrobbler.app>
->
 > Everything not listed in this document should behave the same as upstream
 > Multi-Scrobbler. If a feature, setting, or behavior is not mentioned here,
-> the upstream documentation is accurate and fully applicable.
+> the upstream documentation is accurate and fully applicable — see the
+> Documentation section of `instructions.md` for links.
 
-Multi-Scrobbler tracks what you play across sources (Spotify, Jellyfin, Plex, Subsonic,
-YouTube Music, and more) and scrobbles it to one or more clients (Last.fm, ListenBrainz,
-Maloja, etc.). See the [upstream repo](https://github.com/FoxxMD/multi-scrobbler) for the
-full list of supported sources and clients.
+[Multi-Scrobbler](https://github.com/FoxxMD/multi-scrobbler) tracks what you play across
+sources such as Spotify, Jellyfin, Plex, and Subsonic, and scrobbles it to one or more
+clients such as Last.fm, ListenBrainz, and Maloja.
 
 ---
 
@@ -30,151 +28,175 @@ full list of supported sources and clients.
 - [Health Checks](#health-checks)
 - [Backups and Restore](#backups-and-restore)
 - [Limitations and Differences](#limitations-and-differences)
+- [Quick Reference for AI Consumers](#quick-reference-for-ai-consumers)
 
 ---
 
 ## Image and Container Runtime
 
-Unmodified upstream image (`foxxmd/multi-scrobbler`), built on linuxserver.io's
-`baseimage-debian` (s6-overlay). Ships `amd64` and `arm64`. The daemon runs in the
-`multi-scrobbler-sub` subcontainer, running the image's own entrypoint as PID 1
-(`sdk.useEntrypoint()` + `runAsInit: true`), so s6-overlay starts the same way it does
-outside StartOS.
+The upstream `foxxmd/multi-scrobbler` image is used unmodified, for `x86_64` and `aarch64`.
 
-The upstream node process only flushes its database connection on `SIGINT` — it has no
-`SIGTERM` handler, so s6's default stop signal kills it ungracefully. `startos/main.ts`
-mounts `assets/svc-node-down-signal` (contents: `SIGINT`) over s6-rc's
-`/etc/s6-overlay/s6-rc.d/svc-node/down-signal`, overriding the signal s6 sends the node
-process on stop, without modifying the upstream image. See
-[issue #3](https://github.com/Jolls/multi-scrobbler-startos/issues/3) for the crash-loop
-bug this was investigated for.
+It is built on linuxserver.io's `baseimage-debian`, whose s6-overlay `/init` entrypoint must
+run as PID 1, so the daemon execs the image's own entrypoint rather than node directly. The
+single subcontainer is named `multi-scrobbler-sub`.
+
+One file is added at runtime. The application handles `SIGINT` and nothing else, so s6's
+default `SIGTERM` on stop kills it before it flushes its database. `assets/svc-node-down-signal`
+is mounted over `/etc/s6-overlay/s6-rc.d/svc-node/down-signal`, which s6-rc reads out of its
+source tree when it compiles the service database at boot, so a platform stop asks s6 to send
+`SIGINT` instead. The upstream image ships no such file; the mount creates it.
 
 ## Volume and Data Layout
 
-Where the service's data lives.
+Two volumes: the application's data directory, and StartOS's own.
 
-| Volume | Mount point | Contents |
-| ------ | ----------- | -------- |
-| `config` | `/config` | `config.json` (sources/clients config), `ms.db` (SQLite play-history database), `ms-auth.cache` (OAuth token cache) |
+| Volume   | Mount point | Contents                                                                |
+| -------- | ----------- | ----------------------------------------------------------------------- |
+| `config` | `/config`   | `config.json`, the play-history database, and per-source credential caches |
+| `startos`| not mounted | `store.json` — see [File Models](#file-models)                          |
 
-`CONFIG_DIR` and `DATA_DIR` both point at `/config`, matching the upstream Docker image's
-own layout.
+Both `CONFIG_DIR` and `DATA_DIR` point at `/config`, matching the upstream image's own
+layout, so configuration and state share one directory. Within it, each authorized OAuth
+source or client keeps its tokens in its own `currentCreds-<type>-<name>.json`, not in a
+single shared cache — a detail worth knowing when diagnosing why one source lost its
+authorization and the others did not.
+
+The `startos` volume is never mounted into the container: it holds StartOS-side state the
+application has no business reading.
 
 ## File Models
 
-`config.json`, at `/config/config.json`, is modeled as raw text (`FileHelper.string`), not
-a typed schema — upstream's own shape (30+ source types, 8 client types) is too large to
-mirror and keep in sync. Nothing seeds it: no file exists on disk until the **Edit
-config.json** action is run for the first time, at which point it becomes entirely
-user-owned — nothing StartOS-managed rewrites it afterward, and a hand edit made outside
-the action (e.g. over SSH) survives untouched until the next action submission. The daemon
-reads it once at startup only; `startos/main.ts` watches the file reactively and restarts
-the daemon whenever the action writes a new version, since multi-scrobbler itself does not
-pick up config changes on a running process.
+Two models, and they are owned by opposite parties.
+
+`config.json`, at `/config/config.json`, is the whole of multi-scrobbler's own
+configuration — every source and every client. It is modeled as raw text rather than a
+typed schema, because upstream's shape spans more than thirty source types and eight client
+types and mirroring it would go stale on the first upstream release. Nothing seeds it: no
+file exists until **Edit config.json** is run for the first time. From then on it is
+entirely the user's — nothing StartOS-managed rewrites it, and an edit made over SSH or
+through a file manager survives untouched until the next time that action is submitted.
+The daemon reads it only at startup, so the package watches the file and restarts the daemon
+whenever it changes.
+
+`store.json`, on the `startos` volume, holds one key: `baseUrl`, the address chosen by
+**Set Callback Address**. Init seeds it on first boot with the service's mDNS (`.local`)
+address, or the first non-local address if mDNS is off, and the action overwrites it
+thereafter. It is delivered to the container as the `BASE_URL` environment variable, which
+multi-scrobbler consumes on every launch — so a change takes effect on the restart the
+action triggers, and never mid-run.
 
 ## Dependencies
 
-What this service needs from other services.
+One, and the service runs perfectly well without it.
 
-- **Maloja** (`maloja`) — optional. multi-scrobbler works standalone or with any other
-  client; this dependency only matters if you add a Maloja client to `config.json`.
-  `kind: 'running'`, `healthChecks: ['maloja']`. No volumes are mounted from it — connection
-  is over the network only, via the **Get Maloja Connection Info** action.
+- **Maloja** (`maloja`) — optional, `kind: 'running'`, gated on its `maloja` health check.
+  Relevant only if you add a Maloja client to `config.json`; multi-scrobbler is equally
+  happy with any other client, or none. No volume is mounted from it — the two talk over
+  the network, at the address **Get Maloja Connection Info** resolves.
 
 ## Network Access and Interfaces
 
-What the service exposes.
+One interface, serving the dashboard and the REST API from the same port.
 
-| Interface | Port | Protocol | Purpose |
-| --------- | ---- | -------- | ------- |
-| Web Interface (`ui`) | 9078 | HTTP | Dashboard, OAuth authorization links, and REST API |
+| Interface     | Id   | Type | Port | Protocol | Purpose                                              |
+| ------------- | ---- | ---- | ---- | -------- | ---------------------------------------------------- |
+| Web Interface | `ui` | ui   | 9078 | HTTP     | dashboard, OAuth authorization links, and the REST API |
 
-Reachable via whatever LAN/Tor/clearnet addresses the user enables in the Interfaces tab,
-same as any other StartOS service.
+The dashboard has no login of its own — upstream ships none — so whichever addresses are
+enabled for this interface are the access control.
 
 ## Installation and First-Run Flow
 
-No wizard is skipped and no credentials are auto-generated — multi-scrobbler has no login
-of its own (see [Network Access and Interfaces](#network-access-and-interfaces)). On first
-boot the app creates `ms.db` on its own; you then add sources/clients through the
-**Edit config.json** action (see [Actions](#actions)) or via environment variables, per the
-[upstream configuration docs](https://docs.multi-scrobbler.app/configuration/). `PORT`,
-`CONFIG_DIR`, `DATA_DIR`, `PUID`, `PGID`, `TZ`, and `BASE_URL` (derived from the enabled Web
-Interface address) are StartOS-managed; everything else — sources, clients, retention,
-caching — is upstream-managed via `config.json` or additional env vars. Sources that use
-OAuth (Spotify, Last.fm, YouTube Music) are authorized from a link on the dashboard after
-startup.
+Nothing is skipped and no credentials are generated; multi-scrobbler has no setup wizard and
+no login.
+
+The one thing init does is pick a callback address. `BASE_URL` is what multi-scrobbler builds
+its OAuth redirect URIs from, and it must be an address the browser completing that
+provider's authorization can actually reach — so on first boot the package seeds
+`store.json` with the mDNS (`.local`) address, and **Set Callback Address** lets the user
+change it. Everything else is upstream-managed: `PORT`, `CONFIG_DIR`, `DATA_DIR`, `PUID`,
+`PGID`, `TZ`, and `BASE_URL` come from StartOS; sources, clients, retention, and caching all
+come from `config.json` or additional environment variables.
+
+On first boot the application creates its database on its own. Sources that use OAuth are
+authorized afterwards, from a link the dashboard shows for each one.
 
 ## Actions
 
-What can be done to the service, and when.
+Three actions: one address choice, one configuration editor, one lookup.
 
-- **Edit config.json** (`edit-config`) — a single `textarea` action holding the raw
-  `config.json` content, in the same format as [upstream's own schema](https://docs.multi-scrobbler.app/configuration/)
-  (sources, clients, retention, caching, etc.). This is a thin passthrough, not a
-  structured form: the handler only checks that the submission is valid JSON and that
-  `sources`/`clients`, if present, are arrays — it does not validate individual source or
-  client fields (30+ source types and 8 client types make that impractical to mirror and
-  keep in sync). A wrong per-source field will save without a StartOS-level error and
-  surface only as an app-level error in the logs/dashboard once the daemon restarts.
-  Prefilled from the file on disk, or a `{ "sources": [], "clients": [] }` skeleton on
-  first run. Available any time; writing a new config restarts the daemon to apply it.
-  Safe to re-run — it always overwrites with exactly what was submitted.
-- **Get Maloja Connection Info** (`maloja-connection-info`) — resolves the Maloja
-  dependency's inter-container bridge address (`sdk.host.getBridgeAddress`, per
-  [Service-to-Service Networking](https://docs.start9.com/packaging/service-to-service.html))
-  and returns it as a copyable URL for pasting into a Maloja client's `url` field in
-  `config.json`. Necessary because `localhost` doesn't reach another service's container,
-  and the LAN address goes through StartOS's reverse proxy with a self-signed cert that
-  multi-scrobbler's TLS validation rejects — the bridge address is the one that actually
-  works. Read-only and safe to re-run at any time. Returns an informational "not available"
-  result if Maloja isn't installed/running, rather than an error.
+- **Set Callback Address** (`set-base-url`) — run it when the address OAuth providers should
+  redirect back to is wrong for where you browse from: over a tunnel, over Tor, or on a
+  clearnet domain, where the seeded `.local` name does not resolve. Writes `baseUrl` in
+  `store.json` and nothing else; the daemon restarts to pick it up, which takes seconds and
+  interrupts scrobbling briefly. Safe to re-run. Choosing an address does not retroactively
+  fix an already-authorized source — it changes where the *next* authorization sends the
+  browser.
+
+- **Edit config.json** (`edit-config`) — the only way to add or change sources and clients
+  from inside StartOS. A single text field holding the file verbatim, prefilled from disk or
+  with a `{ "sources": [], "clients": [] }` skeleton on first run. Validation is deliberately
+  shallow: valid JSON, and `sources`/`clients` array-typed if present. A wrong field inside a
+  source entry saves without complaint and surfaces later as an application error in the logs
+  and on the dashboard. Available in any state; submitting restarts the daemon. Safe to
+  re-run — it overwrites with exactly what was submitted, so it is also how you revert.
+
+- **Get Maloja Connection Info** (`maloja-connection-info`) — run it before adding a Maloja
+  client, to get the URL that entry's `url` field needs. Reads nothing and changes nothing,
+  so it is safe at any time. `localhost` names this container, not Maloja's, and the LAN
+  address arrives over a certificate multi-scrobbler will not trust; the address this returns
+  is the internal one that avoids both. Returns an informational result rather than an error
+  when Maloja is absent or stopped.
 
 ## Tasks
 
-None — the package raises no tasks. The service's ordinary controls are always available,
-and nothing blocks it from starting.
+One task, and only after a working setup breaks.
+
+- **Set Callback Address** — `important`, so it is surfaced prominently but never blocks the
+  service. Raised at init when the address stored in `store.json` is no longer among the
+  interface's enabled addresses — typically because a gateway or domain was turned off.
+  Running the action clears it. It can return, and does, any time the stored address stops
+  being available. It is never raised on a fresh install, because init seeds an address
+  before anything can be missing.
 
 ## Health Checks
 
-`checkPortListening` on port 9078 — reports ready once the web server binds its port.
-Upstream also exposes `GET /api/health`, which reflects per-source/client connectivity;
-that endpoint is not used for the StartOS readiness check because it can legitimately
-return a non-200 status while sources are still being configured/authorized, which would
-otherwise read as a crash. A failure here means the web server itself never bound its
-port — check the container logs for a startup error, not source/client connectivity.
+One check, on the daemon.
+
+- **`multi-scrobbler`** — succeeds once port 9078 accepts a connection. It deliberately does
+  not use the application's own `/api/health` endpoint, which reports per-source and
+  per-client connectivity and legitimately returns a non-200 while sources are still being
+  configured or authorized; treating that as the readiness signal would report a correctly
+  running service as crashed. A failure here therefore means the web server never bound its
+  port at all — read the subcontainer's logs for a startup error. It says nothing about
+  whether any source or client is connected; the dashboard is where that lives.
 
 ## Backups and Restore
 
-The entire `config` volume is backed up (config, database, and auth token cache) — a
-wholesale volume copy, not a database dump. Restoring a backup restores sources/clients and
-play history exactly as they were; OAuth tokens in `ms-auth.cache` are restored too, so
-re-authorization is normally not required.
+Both volumes are copied wholesale — `sdk.Backups.ofVolumes`, no dump step — so
+`config.json`, the play-history database, every `currentCreds-*.json`, and `store.json`
+travel together.
+
+Nothing is deliberately excluded. Because the credential files are captured as-is, a restored
+instance comes back with its OAuth sources still authorized and needs no re-authorization;
+because `store.json` comes with it, the callback address is the one that was chosen. That
+address usually stops resolving, though: the interface is assigned a fresh external port on
+reinstall, so the restored value names a port nothing is listening on and the **Set Callback
+Address** task is raised. Picking the address again is the one step a restore normally needs.
 
 ## Limitations and Differences
 
-1. `BASE_URL` is derived automatically from the service's own enabled Web Interface address
-   and reapplied on every restart; it cannot currently be pinned to a specific address
-   independent of interface state. Among the non-bridge addresses available,
-   `startos/main.ts` prefers the mDNS (`.local`) hostname when one is enabled, since it
-   resolves consistently for any device on the LAN regardless of which physical interface
-   answers — a private IPv4/IPv6 address is picked otherwise, in unspecified order among
-   however many the box has (LAN NIC, WireGuard tunnel, etc). This matters for the
-   `redirectUri` that OAuth-based sources/clients (Spotify, Last.fm, Deezer) derive from
-   `BASE_URL` by default: **the browser completing that provider's auth flow must be able to
-   resolve/reach whatever address was picked.** A user configuring OAuth while connected
-   over WireGuard (or Tor, or a public domain) rather than the plain LAN may find the
-   mDNS-derived callback times out, since `.local` names don't resolve off the LAN segment.
-   The fix is to override that source/client's `redirectUri` explicitly in `config.json`
-   with an address reachable from wherever the browser actually is (confirmed working
-   2026-08-21: WireGuard-connected browser, `redirectUri` manually set to the box's LAN IP,
-   completed the Last.fm auth flow that the default mDNS address could not reach).
+Three things behave differently here than they would running the image yourself.
+
+1. `BASE_URL` is a single address chosen through **Set Callback Address**, not a per-source
+   setting. The browser completing an OAuth flow has to be able to reach whatever is chosen,
+   which the default mDNS address does not satisfy off the LAN. Choosing a reachable address
+   is the general fix; overriding `redirectUri` on the individual source or client in
+   `config.json` handles the case where different providers need different addresses.
 2. `PUID`/`PGID` are fixed at `1000:1000` rather than user-configurable.
-3. The **Edit config.json** action validates only that the submission is JSON with
-   array-typed `sources`/`clients`, not the fields of individual source/client entries — a
-   config with a valid JSON shape but wrong per-source fields (e.g. a missing required key
-   for a given source type) will save without a StartOS-level error, surfacing instead as
-   an app-level error in the logs/dashboard once the daemon restarts.
+3. **Edit config.json** validates only the outer JSON shape, not the fields of individual
+   source and client entries, so a configuration that is well-formed but wrong is accepted
+   and fails later at the application level.
 
 ---
 
@@ -187,8 +209,10 @@ architectures: [x86_64, aarch64]
 subcontainers: [multi-scrobbler-sub]
 volumes:
   config: /config
+  startos: null
 file_models:
   - config.json
+  - store.json
 startos_managed_env_vars:
   - PORT
   - CONFIG_DIR
@@ -202,9 +226,11 @@ dependencies:
 interfaces:
   ui: { type: ui, port: 9078 }
 actions:
+  - set-base-url
   - edit-config
   - maloja-connection-info
-tasks: none
+tasks:
+  - { action: set-base-url, severity: important }
 health_checks:
-  - checkPortListening
+  - multi-scrobbler
 ```

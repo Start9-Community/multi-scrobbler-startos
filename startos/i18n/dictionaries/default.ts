@@ -21,6 +21,12 @@ const dict = {
   'Maloja Connection Info': 12,
   'Paste this into the "url" field of a Maloja client entry in config.json.': 13,
   'Maloja URL': 14,
+  // actions/setBaseUrl.ts
+  URL: 16,
+  'Set Callback Address': 17,
+  'Choose which of this service’s addresses Spotify, Last.fm, and other authorization flows should send your browser back to.': 18,
+  // init/taskSetBaseUrl.ts
+  'The address authorization flows are sent back to is no longer enabled. Choose another.': 19,
 } as const
 
 /**

@@ -1,7 +1,21 @@
-// multi-scrobbler's web UI / API port. Configurable upstream via the `PORT`
-// env var (default 9078) — we pin it here and pass the same value through.
+import { T } from '@start9labs/start-sdk'
+import { sdk } from './sdk'
+
+// multi-scrobbler's web port is whatever we pass as PORT; it is not fixed by the image.
 export const uiPort = 9078
 
-// The host id the 'ui' interface is bound under (see interfaces.ts). Exported
-// so dependent packages can resolve our bridge address without hardcoding it.
+// Exported so dependent packages can resolve our bridge address without hardcoding it.
 export const uiHostId = 'ui'
+
+export function getNonLocalUrls(effects: T.Effects): Promise<string[]> {
+  return sdk.host
+    .getOwn(
+      effects,
+      uiHostId,
+      (host) =>
+        host?.bindings[uiPort]?.interfaces[
+          'ui'
+        ]?.addressInfo.nonLocal.format() ?? [],
+    )
+    .const()
+}

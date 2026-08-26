@@ -1,35 +1,29 @@
 import { setupManifest } from '@start9labs/start-sdk'
-import { long, short } from './i18n'
+import { depMalojaDescription, long, short } from './i18n'
 
 export const manifest = setupManifest({
   id: 'multi-scrobbler',
   title: 'Multi-Scrobbler',
-  license: 'MIT', // Confirmed: upstream README + Dockerfile OCI label both say MIT.
-  packageRepo: 'https://github.com/Jolls/multi-scrobbler-startos',
+  license: 'MIT',
+  packageRepo: 'https://github.com/Start9-Community/multi-scrobbler-startos',
   upstreamRepo: 'https://github.com/FoxxMD/multi-scrobbler',
   marketingUrl: 'https://docs.multi-scrobbler.app',
   donationUrl: null,
   description: { short, long },
-  volumes: ['config'],
+  volumes: ['config', 'startos'],
   images: {
-    // Confirmed on Docker Hub 2026-08-13: foxxmd/multi-scrobbler:0.16.4 ships
-    // both amd64 and arm64. See UPDATING.md for how to re-check this on bump.
     'multi-scrobbler': {
       source: { dockerTag: 'foxxmd/multi-scrobbler:0.16.4' },
       arch: ['x86_64', 'aarch64'],
     },
   },
   dependencies: {
-    // Optional: multi-scrobbler works fine with any client (or none), but
-    // when Maloja is used as a client, its config.json "url" must point at
-    // this dependency's bridge address, not "localhost" — see
-    // actions/malojaConnectionInfo.ts.
     maloja: {
-      description: 'Optional scrobble client — used if you add a Maloja client to config.json.',
+      description: depMalojaDescription,
       optional: true,
       metadata: {
         title: 'Maloja',
-        icon: 'https://raw.githubusercontent.com/Jolls/maloja-startos/refs/heads/master/icon.svg',
+        icon: 'https://raw.githubusercontent.com/Start9-Community/maloja-startos/refs/heads/master/icon.svg',
       },
     },
   },

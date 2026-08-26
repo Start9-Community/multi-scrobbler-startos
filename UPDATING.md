@@ -23,8 +23,7 @@ version tag so upgrades are deliberate.
 
 ## Applying the bump
 
-1. Update `images['multi-scrobbler'].source.dockerTag` in `startos/manifest/index.ts`,
-   and update the "Confirmed on Docker Hub \<date\>" comment above it.
+1. Update `images['multi-scrobbler'].source.dockerTag` in `startos/manifest/index.ts`.
 2. Add a new entry to `startos/versions/` per [the version rules](../start-technologies/projects/start-sdk/docs/src/versions.md),
    with release notes describing what changed upstream.
 3. Rebuild (`make`) and test-install before publishing.

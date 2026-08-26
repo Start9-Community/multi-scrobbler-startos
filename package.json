@@ -7,7 +7,7 @@
   },
   "dependencies": {
     "@start9labs/start-sdk": "2.0.9",
-    "maloja-startos": "github:Jolls/maloja-startos#master"
+    "maloja-startos": "github:Start9-Community/maloja-startos#next"
   },
   "overrides": {
     "@start9labs/start-sdk": "$@start9labs/start-sdk"

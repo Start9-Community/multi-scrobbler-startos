@@ -28,7 +28,9 @@ export const editConfig = sdk.Action.withInput(
   'edit-config',
   async () => ({
     name: i18n('Edit config.json'),
-    description: i18n('Add or change sources and clients by editing the raw config file.'),
+    description: i18n(
+      'Add or change sources and clients by editing the raw config file.',
+    ),
     warning: null,
     allowedStatuses: 'any',
     group: null,
@@ -46,7 +48,9 @@ export const editConfig = sdk.Action.withInput(
     try {
       parsed = JSON.parse(input.config)
     } catch (e) {
-      throw new Error(`config.json is not valid JSON: ${e instanceof Error ? e.message : String(e)}`)
+      throw new Error(
+        `config.json is not valid JSON: ${e instanceof Error ? e.message : String(e)}`,
+      )
     }
     if (typeof parsed !== 'object' || parsed === null) {
       throw new Error('config.json must be a JSON object.')

@@ -1,4 +1,7 @@
-import { uiHostId as malojaUiHostId, uiPort as malojaUiPort } from 'maloja-startos/startos/utils'
+import {
+  uiHostId as malojaUiHostId,
+  uiPort as malojaUiPort,
+} from 'maloja-startos/startos/utils'
 import { i18n } from '../i18n'
 import { sdk } from '../sdk'
 
@@ -40,7 +43,9 @@ export const malojaConnectionInfo = sdk.Action.withoutInput(
     return {
       version: '1',
       title: i18n('Maloja Connection Info'),
-      message: i18n('Paste this into the "url" field of a Maloja client entry in config.json.'),
+      message: i18n(
+        'Paste this into the "url" field of a Maloja client entry in config.json.',
+      ),
       result: {
         type: 'single',
         name: i18n('Maloja URL'),
