@@ -78,10 +78,12 @@ through a file manager survives untouched until the next time that action is sub
 The daemon reads it only at startup, so the package watches the file and restarts the daemon
 whenever it changes.
 
-`store.json`, on the `startos` volume, holds one key: `baseUrl`, the address chosen by
-**Set Callback Address**. Init seeds it on first boot with the service's mDNS (`.local`)
-address, or the first non-local address if mDNS is off, and the action overwrites it
-thereafter. It is delivered to the container as the `BASE_URL` environment variable, which
+`store.json`, on the `startos` volume, holds two keys: `baseUrl`, the address chosen by
+**Set Callback Address**, and `uiPassword`, set (and cleared) by **Set Web UI Password** /
+**Clear Web UI Password**. Init seeds `baseUrl` on first boot with the service's mDNS
+(`.local`) address, or the first non-local address if mDNS is off, and the action overwrites
+it thereafter; `uiPassword` is unset by default and only `setInterfaces` reads it — nothing
+seeds it. `baseUrl` is delivered to the container as the `BASE_URL` environment variable, which
 multi-scrobbler consumes on every launch — so a change takes effect on the restart the
 action triggers, and never mid-run.
 
@@ -102,10 +104,10 @@ One interface, serving the dashboard and the REST API from the same port.
 | ------------- | ---- | ---- | ---- | -------- | ---------------------------------------------------- |
 | Web Interface | `ui` | ui   | 9078 | HTTP     | dashboard, OAuth authorization links, and the REST API |
 
-**There is no authentication, and none can be turned on.** Upstream ships no login layer at
-all: its `auth` module handles only outbound OAuth to Spotify, Last.fm, Deezer and YouTube
-Music, and the session middleware exists to carry those callbacks rather than to identify a
-user. So whichever addresses are enabled for this interface are the entire access control.
+**Upstream ships no login layer of its own**, so without further action, whichever addresses
+are enabled for this interface are the entire access control. Its `auth` module handles only
+outbound OAuth to Spotify, Last.fm, Deezer and YouTube Music, and the session middleware exists
+to carry those callbacks rather than to identify a user.
 
 Treat that as wider than a read-only page, because the REST API is a control surface. Without
 credentials a caller can read the full application log (`/api/logs`, and a live stream of it),
@@ -114,6 +116,17 @@ clear caches, manipulate the dead-scrobble queue, and start an OAuth authorizati
 (`/api/source/auth`). Source and client secrets are not exposed — `/api/status` and
 `/api/components` report state without credentials in it — but everything above is reachable by
 anyone who can open the address.
+
+**Set Web UI Password** (see [Actions](#actions)) closes that gap by turning on StartOS's
+reverse-proxy HTTP basic auth (`addSsl.auth`) for this binding: unauthenticated requests get
+`401` before they reach the container. It's opt-in and off by default because `addSsl.auth`
+gates the whole port with no path scoping, and this interface serves the dashboard, the control
+API, *and* scrobble ingest together. Turning it on also 401s the endpoints push-based sources
+post to without a browser — the WebScrobbler browser extension, ListenBrainz-compatible clients
+(`/api/listenbrainz*`, `/1/submit-listens`), Last.fm-compatible clients (`endpointlfm`), and
+Plex/Tautulli/Jellyfin webhooks — since none of them authenticate with HTTP basic. Pull-based
+sources (Spotify, Subsonic, Last.fm, YouTube Music) are unaffected; multi-scrobbler dials out to
+those rather than being called into. **Clear Web UI Password** turns the gate back off.
 
 ## Installation and First-Run Flow
 
@@ -133,7 +146,8 @@ authorized afterwards, from a link the dashboard shows for each one.
 
 ## Actions
 
-Three actions: one address choice, one configuration editor, one lookup.
+Five actions: one address choice, one configuration editor, one lookup, and a pair that
+toggle the web UI password gate.
 
 - **Set Callback Address** (`set-base-url`) — run it when the address OAuth providers should
   redirect back to is wrong for where you browse from: over a tunnel, over Tor, or on a
@@ -157,6 +171,18 @@ Three actions: one address choice, one configuration editor, one lookup.
   address arrives over a certificate multi-scrobbler will not trust; the address this returns
   is the internal one that avoids both. Returns an informational result rather than an error
   when Maloja is absent or stopped.
+
+- **Set Web UI Password** (`set-web-ui-password`) — generates a random password, writes it to
+  `store.json` as `uiPassword`, and returns the username (`admin`, fixed) and password as a
+  one-time-viewable credential pair. `setInterfaces` (`interfaces.ts`) reads `uiPassword`
+  reactively via `.const(effects)` and passes it as StartOS reverse-proxy basic auth
+  (`addSsl.auth`) on the web interface binding, so the gate takes effect without a restart.
+  Re-running it rotates the password. Its warning names the push-based source types that stop
+  working while it's on — see [Network Access and Interfaces](#network-access-and-interfaces).
+
+- **Clear Web UI Password** (`clear-web-ui-password`) — merges `uiPassword` back to `undefined`
+  in `store.json`, which drops `addSsl.auth` on the next `setInterfaces` pass and returns the
+  interface to no authentication.
 
 ## Tasks
 
