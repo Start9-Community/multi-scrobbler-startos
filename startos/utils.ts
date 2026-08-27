@@ -1,7 +1,7 @@
-// multi-scrobbler's web UI / API port. Configurable upstream via the `PORT`
-// env var (default 9078) — we pin it here and pass the same value through.
+// multi-scrobbler's web port is whatever we pass as PORT; it is not fixed by the image.
 export const uiPort = 9078
 
-// The host id the 'ui' interface is bound under (see interfaces.ts). Exported
-// so dependent packages can resolve our bridge address without hardcoding it.
+// Exported so dependent packages can resolve our bridge address without hardcoding it.
+// Keep this module free of value imports: navidrome-startos imports from it, and anything
+// reachable from here lands in that package's bundle.
 export const uiHostId = 'ui'

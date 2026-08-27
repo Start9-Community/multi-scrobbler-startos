@@ -1,13 +1,13 @@
 import { IMPOSSIBLE, VersionInfo } from '@start9labs/start-sdk'
 
 export const current = VersionInfo.of({
-  version: '0.16.4:2',
+  version: '0.16.4:0',
   releaseNotes: {
-    en_US: 'Fixed two bugs found while hardening the package for release: a stop/start race that could leave the container in a crash loop (now sends SIGINT on stop, matching what the app actually flushes its database on), and a self-referential URL bug where OAuth-based sources/clients (Spotify, Last.fm, Deezer) could get a callback address unreachable from your browser, silently stalling authorization. No config changes needed — existing installs pick up both fixes automatically.',
-    es_ES: 'Se corrigieron dos errores encontrados al preparar el paquete para su publicación: una condición de carrera entre detener e iniciar que podía dejar el contenedor en un bucle de fallos (ahora se envía SIGINT al detener, coincidiendo con lo que la aplicación realmente usa para guardar su base de datos), y un error de URL autorreferencial donde las fuentes/clientes basados en OAuth (Spotify, Last.fm, Deezer) podían recibir una dirección de devolución de llamada inalcanzable desde el navegador, bloqueando silenciosamente la autorización. No se necesitan cambios de configuración: las instalaciones existentes reciben ambas correcciones automáticamente.',
-    de_DE: 'Zwei Fehler behoben, die beim Härten des Pakets für die Veröffentlichung gefunden wurden: eine Stop/Start-Race-Condition, die den Container in eine Absturzschleife versetzen konnte (jetzt wird beim Stoppen SIGINT gesendet, passend dazu, worüber die App ihre Datenbank tatsächlich sichert), und ein Fehler bei selbstreferenzierenden URLs, bei dem OAuth-basierte Quellen/Clients (Spotify, Last.fm, Deezer) eine vom Browser aus nicht erreichbare Callback-Adresse erhalten konnten, wodurch die Autorisierung stillschweigend hängen blieb. Keine Konfigurationsänderungen nötig – bestehende Installationen erhalten beide Korrekturen automatisch.',
-    pl_PL: 'Naprawiono dwa błędy znalezione podczas przygotowywania pakietu do wydania: wyścig stop/start, który mógł spowodować pętlę awarii kontenera (teraz przy zatrzymywaniu wysyłany jest SIGINT, zgodnie z tym, po czym aplikacja faktycznie zapisuje swoją bazę danych), oraz błąd adresu URL odwołującego się do samego siebie, przez który źródła/klienci oparte na OAuth (Spotify, Last.fm, Deezer) mogli otrzymać adres zwrotny niedostępny z przeglądarki, co po cichu blokowało autoryzację. Nie są wymagane zmiany konfiguracji — istniejące instalacje otrzymują obie poprawki automatycznie.',
-    fr_FR: "Correction de deux bugs découverts en préparant le paquet pour la publication : une situation de compétition arrêt/démarrage pouvant laisser le conteneur dans une boucle de plantage (un SIGINT est désormais envoyé à l'arrêt, correspondant à ce sur quoi l'application enregistre réellement sa base de données), et un bug d'URL autoréférentielle où les sources/clients basés sur OAuth (Spotify, Last.fm, Deezer) pouvaient recevoir une adresse de rappel inaccessible depuis le navigateur, bloquant silencieusement l'autorisation. Aucun changement de configuration nécessaire : les installations existantes reçoivent les deux corrections automatiquement.",
+    en_US: 'Initial release for StartOS',
+    es_ES: 'Lanzamiento inicial para StartOS',
+    de_DE: 'Erstveröffentlichung für StartOS',
+    pl_PL: 'Pierwsze wydanie dla StartOS',
+    fr_FR: 'Version initiale pour StartOS',
   },
   migrations: {
     up: async ({ effects }) => {},

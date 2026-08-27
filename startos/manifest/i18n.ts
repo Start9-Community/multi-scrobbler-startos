@@ -1,9 +1,13 @@
 export const short = {
-  en_US: 'Scrobble your music plays to Last.fm, ListenBrainz, Maloja, and more.',
-  es_ES: 'Registra tus reproducciones de música en Last.fm, ListenBrainz, Maloja y más.',
-  de_DE: 'Scrobble deine Musikwiedergaben zu Last.fm, ListenBrainz, Maloja und mehr.',
+  en_US:
+    'Scrobble your music plays to Last.fm, ListenBrainz, Maloja, and more.',
+  es_ES:
+    'Registra tus reproducciones de música en Last.fm, ListenBrainz, Maloja y más.',
+  de_DE:
+    'Scrobble deine Musikwiedergaben zu Last.fm, ListenBrainz, Maloja und mehr.',
   pl_PL: 'Zapisuj odtworzenia muzyki w Last.fm, ListenBrainz, Maloja i innych.',
-  fr_FR: "Enregistrez vos écoutes musicales sur Last.fm, ListenBrainz, Maloja et plus.",
+  fr_FR:
+    'Enregistrez vos écoutes musicales sur Last.fm, ListenBrainz, Maloja et plus.',
 }
 
 export const long = {
@@ -17,4 +21,17 @@ export const long = {
     'Multi-Scrobbler śledzi, co odtwarzasz na źródłach takich jak Spotify, Jellyfin, Plex i Subsonic, i zapisuje to w jednym lub kilku miejscach docelowych, takich jak Last.fm, ListenBrainz lub Maloja.',
   fr_FR:
     "Multi-Scrobbler suit ce que vous écoutez depuis des sources comme Spotify, Jellyfin, Plex et Subsonic, et l'enregistre vers une ou plusieurs destinations telles que Last.fm, ListenBrainz ou Maloja.",
+}
+
+export const depMalojaDescription = {
+  en_US:
+    'Optional scrobble client — used if you add a Maloja client to config.json.',
+  es_ES:
+    'Cliente de scrobble opcional — se usa si agregas un cliente Maloja a config.json.',
+  de_DE:
+    'Optionaler Scrobble-Client — wird verwendet, wenn du einen Maloja-Client in config.json hinzufügst.',
+  pl_PL:
+    'Opcjonalny klient scrobbli — używany, jeśli dodasz klienta Maloja do config.json.',
+  fr_FR:
+    'Client de scrobble optionnel — utilisé si vous ajoutez un client Maloja dans config.json.',
 }
