@@ -69,7 +69,10 @@ authorization links for anything not yet approved, and the recent plays it has p
   browser extension, ListenBrainz-compatible clients, Last.fm-compatible clients, and
   Plex/Tautulli/Jellyfin webhooks. Sources Multi-Scrobbler connects out to instead (Spotify,
   Subsonic, Last.fm, YouTube Music) keep working either way. Re-running it issues a new
-  password.
+  password. Other StartOS packages on this server, like Navidrome's scrobble feed, reach
+  Multi-Scrobbler over the server's internal network rather than through this login, so they
+  keep working too — but that also means the password doesn't wall them off, only your browser
+  and the outside world.
 - **Clear Web UI Password** — turns the login back off.
 
 ## Limitations

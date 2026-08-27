@@ -14,7 +14,7 @@ export const setWebUiPassword = sdk.Action.withoutInput(
   async () => ({
     name: i18n('Set Web UI Password'),
     description: i18n(
-      'Gate the web interface behind a username and password, enforced by the StartOS reverse proxy.',
+      'Gate the web interface behind a username and password, enforced by the StartOS reverse proxy. Only affects your browser and off-box callers — other packages on this server (e.g. Navidrome’s scrobble feed) reach this service over the internal network directly, unaffected either way.',
     ),
     warning: i18n(
       'This locks the whole web interface port, including the endpoints push-based sources send scrobbles to without a browser: the WebScrobbler browser extension, ListenBrainz-compatible clients, Last.fm-compatible clients, and Plex/Tautulli/Jellyfin webhooks. Any of those already configured will stop working until you point them at credentials that support basic auth, or run Clear Web UI Password. Pull-based sources (Spotify, Subsonic, Last.fm, YouTube Music) are unaffected.',
