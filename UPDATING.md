@@ -5,17 +5,18 @@ Upstream is a Docker image, pinned by tag: `foxxmd/multi-scrobbler:<version>` in
 
 ## Determining the upstream version
 
-Check the latest release tag:
+Read the tag list rather than the "Latest" release, and skip prereleases:
 
 ```bash
-gh release view -R FoxxMD/multi-scrobbler --json tagName -q .tagName
+gh release list -R FoxxMD/multi-scrobbler --exclude-pre-releases --limit 10
 ```
 
-Confirm the corresponding Docker Hub tag exists and is multi-arch before pinning it:
+Confirm the exact Docker Hub tag exists and is multi-arch before pinning it. Query the tag
+directly: the paginated tag list is dominated by `pr-*` builds and will not show it.
 
 ```bash
-curl -s "https://hub.docker.com/v2/repositories/foxxmd/multi-scrobbler/tags?page_size=25" \
-  | jq -r '.results[] | select(.name=="<version>") | .images[].architecture'
+curl -s "https://hub.docker.com/v2/repositories/foxxmd/multi-scrobbler/tags/<version>" \
+  | jq -r '.images[].architecture'
 ```
 
 Expect both `amd64` and `arm64` in the output. Avoid `latest`/`edge` — pin an explicit
@@ -24,6 +25,7 @@ version tag so upgrades are deliberate.
 ## Applying the bump
 
 1. Update `images['multi-scrobbler'].source.dockerTag` in `startos/manifest/index.ts`.
-2. Add a new entry to `startos/versions/` per [the version rules](../start-technologies/projects/start-sdk/docs/src/versions.md),
-   with release notes describing what changed upstream.
+2. Edit `version` and `releaseNotes` in `startos/versions/current.ts` in place, per
+   [the version rules](../start-technologies/projects/start-sdk/docs/src/versions.md). Cover
+   every upstream release since the last version published on the registry.
 3. Rebuild (`make`) and test-install before publishing.
