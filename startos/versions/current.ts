@@ -1,13 +1,68 @@
 import { IMPOSSIBLE, VersionInfo } from '@start9labs/start-sdk'
 
 export const current = VersionInfo.of({
-  version: '0.17.2:0',
+  version: '0.18.1:0',
   releaseNotes: {
-    en_US: 'Bump to upstream 0.17.2, which corrects a 0.17.0 overcorrection requiring a ListenBrainz contact User-Agent (now optional again for regular users), improves Source play processing, and restructures Play Timeline events. Plays scrobbled before this update will not show Timeline events, but no scrobble data is lost.',
-    es_ES: 'Actualiza a la versión 0.17.2 de origen, que corrige una sobrecorrección de la 0.17.0 que exigía un User-Agent de contacto para ListenBrainz (ahora vuelve a ser opcional para usuarios habituales), mejora el procesamiento de reproducciones de las fuentes y reestructura los eventos de la línea de tiempo. Las reproducciones registradas antes de esta actualización no mostrarán eventos en la línea de tiempo, pero no se pierde ningún dato de scrobbling.',
-    de_DE: 'Aktualisiert auf Upstream-Version 0.17.2, die eine Überkorrektur aus 0.17.0 behebt, welche einen Kontakt-User-Agent für ListenBrainz verlangte (für reguläre Nutzer wieder optional), die Play-Verarbeitung der Quellen verbessert und die Timeline-Ereignisse für Plays neu strukturiert. Plays, die vor diesem Update gescrobbelt wurden, zeigen keine Timeline-Ereignisse, es gehen aber keine Scrobbling-Daten verloren.',
-    pl_PL: 'Aktualizacja do wersji źródłowej 0.17.2, która koryguje nadgorliwą zmianę z 0.17.0 wymagającą kontaktowego User-Agenta dla ListenBrainz (znów opcjonalny dla zwykłych użytkowników), usprawnia przetwarzanie odtworzeń ze źródeł oraz przebudowuje zdarzenia osi czasu odtworzeń. Odtworzenia zarejestrowane przed tą aktualizacją nie będą pokazywać zdarzeń na osi czasu, ale żadne dane scrobblowania nie zostaną utracone.',
-    fr_FR: 'Passe à la version amont 0.17.2, qui corrige une surcorrection de la 0.17.0 exigeant un User-Agent de contact pour ListenBrainz (de nouveau facultatif pour les utilisateurs habituels), améliore le traitement des lectures des sources et restructure les événements de la chronologie des lectures. Les lectures scrobblées avant cette mise à jour n’afficheront pas d’événements de chronologie, mais aucune donnée de scrobbling n’est perdue.',
+    en_US: `Bump to upstream 0.18.1.
+
+**Features**
+- Brand-new web UI, replacing the old one entirely.
+- MusicBrainz transformer no longer requires a contact User-Agent (like ListenBrainz before it).
+- MusicBrainz rate limiting is now configurable and load-balances requests across multiple servers.
+
+**Fixes**
+- Restored a missing Plex artwork API route.
+- Minor play-state fix for duplicate detection in the UI.
+
+[Full upstream release notes](https://github.com/FoxxMD/multi-scrobbler/releases/tag/0.18.1)`,
+    es_ES: `Actualiza a la versión 0.18.1 de origen.
+
+**Novedades**
+- Nueva interfaz web, que reemplaza por completo a la anterior.
+- El transformador de MusicBrainz ya no requiere un User-Agent de contacto (igual que antes ocurrió con ListenBrainz).
+- La limitación de tasa de MusicBrainz ahora es configurable y balancea la carga entre varios servidores.
+
+**Correcciones**
+- Se restauró una ruta de la API de artwork de Plex que faltaba.
+- Corrección menor del estado de reproducción para la detección de duplicados en la interfaz.
+
+[Notas de la versión completas (en inglés)](https://github.com/FoxxMD/multi-scrobbler/releases/tag/0.18.1)`,
+    de_DE: `Aktualisiert auf Upstream-Version 0.18.1.
+
+**Neuerungen**
+- Komplett neue Web-Oberfläche, die die alte vollständig ersetzt.
+- Der MusicBrainz-Transformer benötigt keinen Kontakt-User-Agent mehr (wie zuvor bei ListenBrainz).
+- Die MusicBrainz-Ratenbegrenzung ist nun konfigurierbar und verteilt Anfragen auf mehrere Server.
+
+**Fehlerbehebungen**
+- Eine fehlende Plex-Artwork-API-Route wurde wiederhergestellt.
+- Kleinere Korrektur des Play-Status für die Duplikaterkennung in der Oberfläche.
+
+[Vollständige Release Notes (Englisch)](https://github.com/FoxxMD/multi-scrobbler/releases/tag/0.18.1)`,
+    pl_PL: `Aktualizacja do wersji źródłowej 0.18.1.
+
+**Nowości**
+- Zupełnie nowy interfejs webowy, zastępujący dotychczasowy w całości.
+- Transformator MusicBrainz nie wymaga już kontaktowego User-Agenta (podobnie jak wcześniej ListenBrainz).
+- Ograniczanie liczby żądań MusicBrainz jest teraz konfigurowalne i równoważy obciążenie między wieloma serwerami.
+
+**Poprawki**
+- Przywrócono brakującą trasę API grafik Plex.
+- Drobna poprawka stanu odtwarzania dla wykrywania duplikatów w interfejsie.
+
+[Pełne informacje o wydaniu (po angielsku)](https://github.com/FoxxMD/multi-scrobbler/releases/tag/0.18.1)`,
+    fr_FR: `Passe à la version amont 0.18.1.
+
+**Nouveautés**
+- Toute nouvelle interface web, qui remplace entièrement l'ancienne.
+- Le transformateur MusicBrainz ne nécessite plus de User-Agent de contact (comme précédemment pour ListenBrainz).
+- La limitation de débit MusicBrainz est désormais configurable et répartit la charge entre plusieurs serveurs.
+
+**Corrections**
+- Restauration d'une route API d'illustrations Plex manquante.
+- Correction mineure de l'état de lecture pour la détection des doublons dans l'interface.
+
+[Notes de version complètes (en anglais)](https://github.com/FoxxMD/multi-scrobbler/releases/tag/0.18.1)`,
   },
   migrations: {
     up: async ({ effects }) => {},
