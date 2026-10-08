@@ -1,5 +1,6 @@
 import { storeJson } from './fileModels/store.json'
 import { i18n } from './i18n'
+import { primaryUrl } from './primaryUrl'
 import { sdk } from './sdk'
 import { uiHostId, uiPort, uiUsername } from './utils'
 
@@ -37,6 +38,7 @@ export const setInterfaces = sdk.setupInterfaces(async ({ effects }) => {
     username: null,
     path: '',
     query: {},
+    preferredLauncherAddress: await primaryUrl.bestUsable(effects).const(),
   })
 
   return [await origin.export([ui])]

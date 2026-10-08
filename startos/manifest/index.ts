@@ -1,5 +1,5 @@
 import { setupManifest } from '@start9labs/start-sdk'
-import { depMalojaDescription, long, short } from './i18n'
+import { long, short } from './i18n'
 
 export const manifest = setupManifest({
   id: 'multi-scrobbler',
@@ -15,16 +15,6 @@ export const manifest = setupManifest({
     'multi-scrobbler': {
       source: { dockerTag: 'foxxmd/multi-scrobbler:0.19.2' },
       arch: ['x86_64', 'aarch64'],
-    },
-  },
-  dependencies: {
-    maloja: {
-      description: depMalojaDescription,
-      optional: true,
-      metadata: {
-        title: 'Maloja',
-        icon: 'https://raw.githubusercontent.com/Start9-Community/maloja-startos/refs/heads/master/icon.svg',
-      },
     },
   },
 })

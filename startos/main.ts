@@ -2,14 +2,14 @@ import { i18n } from './i18n'
 import { sdk } from './sdk'
 import { uiPort } from './utils'
 import { configJson } from './fileModels/config.json'
-import { storeJson } from './fileModels/store.json'
+import { primaryUrl } from './primaryUrl'
 
 export const main = sdk.setupMain(async ({ effects }) => {
   // multi-scrobbler only reads config.json at startup, so restart the daemon
   // whenever the edit-config action writes a new one.
   await configJson.read().const(effects)
 
-  const baseUrl = await storeJson.read((s) => s.baseUrl).const(effects)
+  const baseUrl = await primaryUrl.bestUsable(effects).const()
 
   return sdk.Daemons.of(effects).addDaemon('multi-scrobbler', {
     subcontainer: sdk.SubContainer.of(

@@ -23,11 +23,12 @@ login.
 ## Getting set up
 
 1. Start the service and open the **Web Interface** to confirm it is running.
-2. If you will authorize a source through Spotify, Last.fm, Deezer, or YouTube Music, run
-   **Set Callback Address** first and pick the address you will be browsing from. This is
-   where those services send your browser back to once you approve access, so it has to be
-   an address that browser can reach. The `.local` name chosen for you works from a device on
-   the same network; over a VPN, over Tor, or from a domain name, pick that address instead.
+2. A new install asks you to run **Set Callback Address**. Pick the address you will be
+   browsing from when you authorize a source through Spotify, Last.fm, Deezer, or YouTube
+   Music. This is where those services send your browser back to once you approve access, so
+   it has to be an address that browser can reach: a `.local` name works from a device on the
+   same network; over a VPN, over Tor, or from a domain name, pick that address instead. Until
+   you choose, Multi-Scrobbler uses one of its addresses on its own.
 3. Run **Edit config.json** to add the sources you want to track from and the clients you
    want to scrobble to. It is a plain text box holding the same `config.json` that
    multi-scrobbler uses everywhere else — see the configuration reference above for the
@@ -36,7 +37,8 @@ login.
    before saving.
    - **Adding a Maloja instance running on this same server?** Do not use `localhost` or its
      LAN address. Run **Get Maloja Connection Info** and paste the URL it gives you into that
-     client's `url` field.
+     client's `url` field. StartOS lists Maloja as a dependency only while a Maloja client
+     or source is configured.
 4. Submitting the action restarts the service to apply the new configuration — you do not
    need to restart it yourself.
 5. For sources that use OAuth, open the dashboard: it shows an authorization link for each
@@ -55,7 +57,7 @@ authorization links for anything not yet approved, and the recent plays it has p
 
 - **Set Callback Address** — pick which of this service's addresses music services send your
   browser back to after you approve access. Run it whenever you start authorizing from
-  somewhere new. It changes where the *next* authorization goes; sources already authorized
+  somewhere new. **Open UI** prefers this address when your connection can reach it. It changes where the *next* authorization goes; sources already authorized
   keep working.
 - **Edit config.json** — add or change sources and clients. Submitting restarts the service.
   Re-running replaces the file with exactly what you submit, so it is also how you undo a
@@ -69,11 +71,11 @@ authorization links for anything not yet approved, and the recent plays it has p
   browser extension, ListenBrainz-compatible clients, Last.fm-compatible clients, and
   Plex/Tautulli/Jellyfin webhooks. Sources Multi-Scrobbler connects out to instead (Spotify,
   Subsonic, Last.fm, YouTube Music) keep working either way. Re-running it issues a new
-  password. Other StartOS packages on this server, like Navidrome's scrobble feed, reach
+  password, and warns you first that the old one stops working. Other StartOS packages on this server, like Navidrome's scrobble feed, reach
   Multi-Scrobbler over the server's internal network rather than through this login, so they
   keep working too — but that also means the password doesn't wall them off, only your browser
   and the outside world.
-- **Clear Web UI Password** — turns the login back off.
+- **Clear Web UI Password** — turns the login back off, after asking you to confirm.
 
 ## Limitations
 
