@@ -1,3 +1,4 @@
+import JSON5 from 'json5'
 import { configJson } from './fileModels/config.json'
 import { malojaJson } from './fileModels/maloja.json'
 import { depMalojaDescription } from './manifest/i18n'
@@ -5,7 +6,7 @@ import { sdk } from './sdk'
 
 const parse = (raw: string | null): unknown => {
   try {
-    return raw ? JSON.parse(raw) : null
+    return raw ? JSON5.parse(raw) : null
   } catch {
     return null
   }
