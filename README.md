@@ -66,7 +66,7 @@ application has no business reading.
 
 ## File Models
 
-Two models, and they are owned by opposite parties.
+Three models, owned by opposite parties.
 
 `config.json`, at `/config/config.json`, is the whole of multi-scrobbler's own
 configuration — every source and every client. It is modeled as raw text rather than a
@@ -78,27 +78,40 @@ through a file manager survives untouched until the next time that action is sub
 The daemon reads it only at startup, so the package watches the file and restarts the daemon
 whenever it changes.
 
+`maloja.json`, at `/config/maloja.json`, is upstream's optional per-type file for Maloja
+entries. The package never writes it; it reads it raw only to decide whether the Maloja
+dependency applies (see [Dependencies](#dependencies)).
+
 `store.json`, on the `startos` volume, holds two keys: `baseUrl`, the address chosen by
 **Set Callback Address**, and `uiPassword`, set (and cleared) by **Set Web UI Password** /
-**Clear Web UI Password**. Init seeds `baseUrl` on first boot with the service's mDNS
-(`.local`) address, or the first non-local address if mDNS is off, and the action overwrites
-it thereafter; `uiPassword` is unset by default and only `setInterfaces` reads it — nothing
-seeds it. `baseUrl` is delivered to the container as the `BASE_URL` environment variable, which
-multi-scrobbler consumes on every launch — so a change takes effect on the restart the
-action triggers, and never mid-run.
+**Clear Web UI Password**. Nothing seeds either: `baseUrl` is written only by the action, and
+`uiPassword` only by the password actions, read by `setInterfaces` alone.
+
+The `BASE_URL` environment variable comes from `baseUrl`, followed to its hostname's current
+port and scheme. While `baseUrl` is unset or its hostname is no longer one of the interface's
+addresses, the package passes a fallback instead — a public domain (HTTPS first), else the
+`.local` address, else the first address offered — without writing it to `store.json`, so a
+chosen address that comes back is used again. multi-scrobbler reads `BASE_URL` on launch, so a
+change takes effect on the restart it triggers, and never mid-run.
 
 ## Dependencies
 
 One, and the service runs perfectly well without it.
 
 - **Maloja** (`maloja`) — optional, `kind: 'running'`, gated on its `maloja` health check.
-  Relevant only if you add a Maloja client to `config.json`; multi-scrobbler is equally
-  happy with any other client, or none. No volume is mounted from it — the two talk over
+  Enabled only while Maloja is configured: a `clients` or `sources` entry in `config.json`
+  with `"type": "maloja"`, or any entry in `/config/maloja.json` (upstream's per-type file).
+  Entries with `"enable": false` don't count, matching upstream. The dependency re-evaluates
+  whenever either file changes. multi-scrobbler is equally happy with any other client, or
+  none. No volume is mounted from it — the two talk over
   the network, at the address **Get Maloja Connection Info** resolves.
 
 ## Network Access and Interfaces
 
-One interface, serving the dashboard and the REST API from the same port.
+One interface, serving the dashboard and the REST API from the same port. Its **Open UI**
+control prefers the address `BASE_URL` resolves to (see [File Models](#file-models)) when the
+connection Open UI is used from can reach it, so the dashboard opens where OAuth callbacks
+return.
 
 | Interface     | Id   | Type | Port | Protocol | Purpose                                              |
 | ------------- | ---- | ---- | ---- | -------- | ---------------------------------------------------- |
@@ -149,11 +162,11 @@ the same server.
 Nothing is skipped and no credentials are generated; multi-scrobbler has no setup wizard and
 no login.
 
-The one thing init does is pick a callback address. `BASE_URL` is what multi-scrobbler builds
-its OAuth redirect URIs from, and it must be an address the browser completing that
-provider's authorization can actually reach — so on first boot the package seeds
-`store.json` with the mDNS (`.local`) address, and **Set Callback Address** lets the user
-change it. Everything else is upstream-managed: `PORT`, `CONFIG_DIR`, `DATA_DIR`, `PUID`,
+The one thing a new install asks for is a callback address. `BASE_URL` is what multi-scrobbler
+builds its OAuth redirect URIs from, and it must be an address the browser completing that
+provider's authorization can actually reach — so a fresh install raises the **Set Callback
+Address** task. The service runs before it is answered, on the fallback address described in
+[File Models](#file-models). Everything else is upstream-managed: `PORT`, `CONFIG_DIR`, `DATA_DIR`, `PUID`,
 `PGID`, `TZ`, and `BASE_URL` come from StartOS; sources, clients, retention, and caching all
 come from `config.json` or additional environment variables.
 
@@ -167,8 +180,9 @@ toggle the web UI password gate.
 
 - **Set Callback Address** (`set-base-url`) — run it when the address OAuth providers should
   redirect back to is wrong for where you browse from: over a tunnel, over Tor, or on a
-  clearnet domain, where the seeded `.local` name does not resolve. Writes `baseUrl` in
-  `store.json` and nothing else; the daemon restarts to pick it up, which takes seconds and
+  clearnet domain, where a `.local` name does not resolve. Offers the interface's addresses
+  (loopback, link-local and the container bridge left out), pre-filled with the stored one.
+  Writes `baseUrl` in `store.json` and nothing else; the daemon restarts to pick it up, which takes seconds and
   interrupts scrobbling briefly. Safe to re-run. Choosing an address does not retroactively
   fix an already-authorized source — it changes where the *next* authorization sends the
   browser.
@@ -190,7 +204,8 @@ toggle the web UI password gate.
 
 - **Set Web UI Password** (`set-web-ui-password`) — generates a random password, writes it to
   `store.json` as `uiPassword`, and returns the username (`admin`, fixed) and password as a
-  one-time-viewable credential pair. `setInterfaces` (`interfaces.ts`) reads `uiPassword`
+  one-time-viewable credential pair. While a password is set, its warning says that running
+  it replaces that password. `setInterfaces` (`interfaces.ts`) reads `uiPassword`
   reactively via `.const(effects)` and passes it as StartOS reverse-proxy basic auth
   (`addSsl.auth`) on the web interface binding, so the gate takes effect without a restart.
   Re-running it rotates the password. Its warning names the push-based source types that stop
@@ -200,18 +215,17 @@ toggle the web UI password gate.
 
 - **Clear Web UI Password** (`clear-web-ui-password`) — merges `uiPassword` back to `undefined`
   in `store.json`, which drops `addSsl.auth` on the next `setInterfaces` pass and returns the
-  interface to no authentication.
+  interface to no authentication. It asks for confirmation first.
 
 ## Tasks
 
-One task, and only after a working setup breaks.
+One task.
 
 - **Set Callback Address** — `important`, so it is surfaced prominently but never blocks the
-  service. Raised at init when the address stored in `store.json` is no longer among the
-  interface's enabled addresses — typically because a gateway or domain was turned off.
-  Running the action clears it. It can return, and does, any time the stored address stops
-  being available. It is never raised on a fresh install, because init seeds an address
-  before anything can be missing.
+  service. Raised while `baseUrl` is unset — so on every fresh install — or its hostname is no
+  longer among the interface's addresses, typically because a gateway or domain was turned
+  off. It clears when the user picks an address or the stored one returns, and comes back any
+  time the stored address stops being available.
 
 ## Health Checks
 
@@ -233,10 +247,10 @@ travel together.
 
 Nothing is deliberately excluded. Because the credential files are captured as-is, a restored
 instance comes back with its OAuth sources still authorized and needs no re-authorization;
-because `store.json` comes with it, the callback address is the one that was chosen. That
-address usually stops resolving, though: the interface is assigned a fresh external port on
-reinstall, so the restored value names a port nothing is listening on and the **Set Callback
-Address** task is raised. Picking the address again is the one step a restore normally needs.
+because `store.json` comes with it, the callback address is the one that was chosen. If the
+interface is assigned a fresh external port on reinstall, `BASE_URL` follows the stored
+hostname to it. Only a hostname that no longer exists on the restored server raises the
+**Set Callback Address** task.
 
 ## Limitations and Differences
 
@@ -266,6 +280,7 @@ volumes:
   startos: null
 file_models:
   - config.json
+  - maloja.json
   - store.json
 startos_managed_env_vars:
   - PORT
@@ -276,13 +291,15 @@ startos_managed_env_vars:
   - TZ
   - BASE_URL
 dependencies:
-  - maloja (optional)
+  - maloja (optional; enabled while a Maloja client or source is configured)
 interfaces:
   ui: { type: ui, port: 9078 }
 actions:
   - set-base-url
   - edit-config
   - maloja-connection-info
+  - set-web-ui-password
+  - clear-web-ui-password
 tasks:
   - { action: set-base-url, severity: important }
 health_checks:

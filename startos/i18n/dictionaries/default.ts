@@ -21,12 +21,12 @@ const dict = {
   'Maloja Connection Info': 12,
   'Paste this into the "url" field of a Maloja client entry in config.json.': 13,
   'Maloja URL': 14,
-  // actions/setBaseUrl.ts
+  // primaryUrl.ts
   URL: 16,
   'Set Callback Address': 17,
   'Choose which of this service’s addresses Spotify, Last.fm, and other authorization flows should send your browser back to.': 18,
-  // init/taskSetBaseUrl.ts
-  'The address authorization flows are sent back to is no longer enabled. Choose another.': 19,
+  // init/primaryUrlTask.ts
+  'Choose the address Spotify, Last.fm, and other authorization flows send your browser back to.': 19,
   // actions/setWebUiPassword.ts
   'Set Web UI Password': 20,
   'Gate the web interface behind a username and password, enforced by the StartOS reverse proxy. Only affects your browser and off-box callers — other packages on this server (e.g. Navidrome’s scrobble feed) reach this service over the internal network directly, unaffected either way.': 21,
@@ -37,6 +37,8 @@ const dict = {
   Password: 26,
   'Clear Web UI Password': 27,
   'Turn off the web interface password gate. The interface goes back to having no authentication.': 28,
+  'Replaces the current web interface password with a new one. The old password stops working, and anything signing in with it must be given the new one.': 29,
+  'Removes the login from the web interface. Anyone who can reach one of its addresses can use the dashboard and its API again without a password.': 30,
 } as const
 
 /**
