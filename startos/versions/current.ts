@@ -1,13 +1,13 @@
 import { IMPOSSIBLE, VersionInfo } from '@start9labs/start-sdk'
 
 export const current = VersionInfo.of({
-  version: '0.20.2:1',
+  version: '0.20.3:0',
   releaseNotes: {
-    en_US: `Set Web UI Password now warns that the password also blocks other services on this server, including Navidrome's scrobble feed. Clear the password to scrobble from Navidrome.`,
-    es_ES: `Establecer contraseña de la interfaz web ahora advierte de que la contraseña también bloquea a otros servicios de este servidor, incluido el envío de scrobbles de Navidrome. Borra la contraseña para enviar scrobbles desde Navidrome.`,
-    de_DE: `„Weboberflächen-Passwort festlegen“ warnt jetzt, dass das Passwort auch andere Dienste auf diesem Server aussperrt, darunter Navidromes Scrobble-Feed. Lösche das Passwort, um aus Navidrome zu scrobbeln.`,
-    pl_PL: `Akcja „Ustaw hasło interfejsu webowego” ostrzega teraz, że hasło blokuje też inne usługi na tym serwerze, w tym przesyłanie scrobbli przez Navidrome. Usuń hasło, aby scrobblować z Navidrome.`,
-    fr_FR: `« Définir le mot de passe de l’interface web » avertit désormais que le mot de passe bloque aussi les autres services de ce serveur, dont le flux de scrobbles de Navidrome. Effacez le mot de passe pour scrobbler depuis Navidrome.`,
+    en_US: `Updated multi-scrobbler to 0.20.3, which shuts down cleanly on its own, so StartOS no longer overrides the stop signal. The package is rebuilt with start-sdk 4.0.0 and requires StartOS 0.4.1 or later.`,
+    es_ES: `multi-scrobbler actualizado a la versión 0.20.3, que se apaga correctamente por sí mismo, por lo que StartOS ya no modifica la señal de parada. El paquete se recompila con start-sdk 4.0.0 y requiere StartOS 0.4.1 o posterior.`,
+    de_DE: `multi-scrobbler auf 0.20.3 aktualisiert; es fährt jetzt selbstständig sauber herunter, daher überschreibt StartOS das Stoppsignal nicht mehr. Das Paket wird mit start-sdk 4.0.0 neu gebaut und erfordert StartOS 0.4.1 oder neuer.`,
+    pl_PL: `Zaktualizowano multi-scrobbler do wersji 0.20.3, która sama poprawnie się zamyka, więc StartOS nie zmienia już sygnału zatrzymania. Pakiet jest przebudowany z start-sdk 4.0.0 i wymaga StartOS 0.4.1 lub nowszego.`,
+    fr_FR: `multi-scrobbler est passé à la version 0.20.3, qui s’arrête proprement de lui-même ; StartOS ne remplace donc plus le signal d’arrêt. Le paquet est reconstruit avec start-sdk 4.0.0 et nécessite StartOS 0.4.1 ou version ultérieure.`,
   },
   migrations: {
     up: async ({ effects }) => {},

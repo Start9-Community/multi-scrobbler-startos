@@ -40,12 +40,6 @@ It is built on linuxserver.io's `baseimage-debian`, whose s6-overlay `/init` ent
 run as PID 1, so the daemon execs the image's own entrypoint rather than node directly. The
 single subcontainer is named `multi-scrobbler-sub`.
 
-One file is added at runtime. The application handles `SIGINT` and nothing else, so s6's
-default `SIGTERM` on stop kills it before it flushes its database. `assets/svc-node-down-signal`
-is mounted over `/etc/s6-overlay/s6-rc.d/svc-node/down-signal`, which s6-rc reads out of its
-source tree when it compiles the service database at boot, so a platform stop asks s6 to send
-`SIGINT` instead. The upstream image ships no such file; the mount creates it.
-
 ## Volume and Data Layout
 
 Two volumes: the application's data directory, and StartOS's own.
@@ -131,8 +125,8 @@ clear caches, manipulate the dead-scrobble queue, and start an OAuth authorizati
 anyone who can open the address.
 
 **Set Web UI Password** (see [Actions](#actions)) narrows that gap by turning on StartOS's
-reverse-proxy HTTP basic auth (`addSsl.auth`) for this binding: unauthenticated requests get
-`401` before they reach the container. It's opt-in and off by default because `addSsl.auth`
+reverse-proxy HTTP basic auth (`proxy.auth`) for this binding: unauthenticated requests get
+`401` before they reach the container. It's opt-in and off by default because `proxy.auth`
 gates the whole port with no path scoping, and this interface serves the dashboard, the control
 API, *and* scrobble ingest together. Turning it on also 401s the endpoints push-based sources
 post to without a browser — the WebScrobbler browser extension, ListenBrainz-compatible clients
@@ -199,14 +193,14 @@ toggle the web UI password gate.
   one-time-viewable credential pair. While a password is set, its warning says that running
   it replaces that password. `setInterfaces` (`interfaces.ts`) reads `uiPassword`
   reactively via `.const(effects)` and passes it as StartOS reverse-proxy basic auth
-  (`addSsl.auth`) on the web interface binding, so the gate takes effect without a restart.
+  (`proxy.auth`) on the web interface binding, so the gate takes effect without a restart.
   Re-running it rotates the password. Its warning names the push-based source types that stop
   working while it's on, and its description notes that it blocks other StartOS packages
   reaching this service over the bridge as well, Navidrome's scrobble feed included — see
   [Network Access and Interfaces](#network-access-and-interfaces).
 
 - **Clear Web UI Password** (`clear-web-ui-password`) — merges `uiPassword` back to `undefined`
-  in `store.json`, which drops `addSsl.auth` on the next `setInterfaces` pass and returns the
+  in `store.json`, which drops `proxy.auth` on the next `setInterfaces` pass and returns the
   interface to no authentication. It asks for confirmation first.
 
 ## Tasks
