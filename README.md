@@ -63,6 +63,11 @@ source or client keeps its tokens in its own `currentCreds-<type>-<name>.json`, 
 single shared cache — a detail worth knowing when diagnosing why one source lost its
 authorization and the others did not.
 
+Before an upgrade migrates the database (`ms.db`), upstream copies it to
+`/config/ms.db.<unix-timestamp>.bak` and never deletes the copy. These accumulate with every
+such upgrade, each about the size of the database, and every one is included in StartOS
+backups. **Delete Old Database Backups** removes all but the newest.
+
 The `startos` volume is never mounted into the container: it holds StartOS-side state the
 application has no business reading.
 
@@ -139,9 +144,16 @@ start (`ADMIN_RESET_PW was NOT applied: this value was already used…`). That w
 expected here. So a password changed later in the dashboard survives restarts, and running
 **Set Admin Password** again takes the password back.
 
-These endpoints stay open after a password is set, and authenticate by their own `token`
-config if anything: ListenBrainz (`/1/*`, `/api/listenbrainz*`), Last.fm (`/2.0/`,
-`/api/lastfm*`), WebScrobbler (`/api/webscrobbler*`), and `/api/health` and `/api/version`.
+These endpoints stay open after a password is set: ListenBrainz (`/1/*`,
+`/api/listenbrainz*`), Last.fm (`/2.0/`, `/api/lastfm*`), WebScrobbler (`/api/webscrobbler*`),
+and `/api/health` and `/api/version`. ListenBrainz matches the source's `data.token` and/or
+`data.slug`; WebScrobbler matches `data.slug`. Last.fm matches `data.slug` before reading the
+body, then uses `data.apiKey` to select among matching sources. An absent or unknown API key
+falls back to the first matching source: an API key is not an access-control gate. To restrict
+Last.fm submissions, configure a slug and use `/api/lastfm/<slug>` as the client's base URL.
+Since upstream 0.21.3 a scrobble request is dropped unread when no source of that kind is
+configured. A source with none of these fields is deprecated: it still catches unmatched
+requests, but logs a warning, and upstream says a future release will reject it.
 **navidrome-startos**'s scrobble-to-multi-scrobbler feature (`ND_LISTENBRAINZ_BASEURL` in its
 `main.ts`) uses `/1/` on the bridge address, so the login doesn't affect it. No StartOS
 `proxy.auth` gate is set on the binding, because that would gate those endpoints too.
@@ -171,8 +183,8 @@ authorized afterwards, from a link the dashboard shows for each one.
 
 ## Actions
 
-Four actions: one address choice, one configuration editor, one lookup, and the admin
-password.
+Five actions: one address choice, one configuration editor, one lookup, the admin
+password, and a cleanup.
 
 - **Set Callback Address** (`set-base-url`) — run it when the address OAuth providers should
   redirect back to is wrong for where you browse from: over a tunnel, over Tor, or on a
@@ -208,6 +220,20 @@ password.
   in `Password for admin '<username>' was reset from ADMIN_RESET_PW…`; the ordinary startup
   message redacts it.
 
+- **Delete Old Database Backups** (`prune-db-backups`) — deletes every
+  `/config/ms.db.<unix-timestamp>.bak` except the one with the highest timestamp, and reports
+  how many it removed and the space freed. Upstream writes these with SQLite's online backup
+  API before each migrating upgrade, and never reads, rotates or removes them (see
+  [Volume and Data Layout](#volume-and-data-layout)); each StartOS backup carries all of them.
+  Stop the service before running it: upstream writes the copies in place during startup.
+  The action opens the newest copy read-only with the image's SQLite runtime, requires a
+  non-empty schema and a successful `PRAGMA quick_check`, and deletes nothing if validation
+  fails. The unsuffixed `ms.db.bak`, which upstream restores from when `ms.db` is missing,
+  is never touched. It never touches `ms.db` itself or restarts the service; start it again
+  after cleanup. To roll back by hand, stop the service, delete `ms.db`
+  and rename the kept copy to `ms.db.bak`. A deleted copy survives only in StartOS backups taken
+  before the action ran. With one copy or none it reports there is nothing to delete.
+
 ## Tasks
 
 Two tasks.
@@ -240,7 +266,8 @@ Both volumes are copied wholesale — `sdk.Backups.ofVolumes`, no dump step — 
 `config.json`, the play-history database, every `currentCreds-*.json`, and `store.json`
 travel together.
 
-Nothing is deliberately excluded. Because the credential files are captured as-is, a restored
+Nothing is deliberately excluded, including upstream's pre-upgrade database copies
+(`ms.db.*.bak`), which can make a backup several times the size of the live database. Because the credential files are captured as-is, a restored
 instance comes back with its OAuth sources still authorized and needs no re-authorization;
 because `store.json` comes with it, the callback address is the one that was chosen. The admin
 password comes back with the database, and the stored `adminPassword` matches the reset
@@ -299,6 +326,7 @@ actions:
   - edit-config
   - maloja-connection-info
   - set-admin-password
+  - prune-db-backups
 tasks:
   - { action: set-admin-password, severity: critical }
   - { action: set-base-url, severity: important }

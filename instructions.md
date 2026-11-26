@@ -16,7 +16,14 @@ list.
 
 The dashboard and its API are behind an admin login. The addresses music players and browser
 extensions send scrobbles to (ListenBrainz, Last.fm and WebScrobbler endpoints, and Navidrome
-on this server) don't need the login, and keep working with it set.
+on this server) don't need the login, and keep working with it set. In **Edit config.json**,
+set `data.token` on a ListenBrainz endpoint source and the same token in the player. For a
+Last.fm or WebScrobbler endpoint source, set `data.slug` and append that slug to the player's
+base URL: `/api/lastfm/<slug>` or `/api/webscrobbler/<slug>`. Use a hard-to-guess slug if
+others can reach the endpoint. Last.fm's `data.apiKey` selects a source but does not reject
+requests with a missing or different key, so it does not protect the endpoint on its own.
+Upstream is phasing out endpoint sources without a token, API key or slug: they still work,
+with a warning in the logs, but a future release will reject them.
 
 ## Getting set up
 
@@ -70,6 +77,12 @@ authorization links for anything not yet approved, and the recent plays it has p
   replaces the password but leaves the username unchanged (`admin` unless you renamed it).
   If you forget the username, run the action and find it in the password-reset message in
   the service logs after the restart.
+- **Delete Old Database Backups** — before an update changes its database, Multi-Scrobbler
+  saves a copy of it, and it never deletes these. Every copy is also saved in each StartOS
+  backup, so they make your backups bigger with each update. This action deletes all but the
+  newest copy, after checking that it is a readable database. Once you've checked the service
+  works after an update, stop it, run this action, and start it again. If the newest copy
+  cannot be verified, nothing is deleted.
 
 ## Limitations
 
